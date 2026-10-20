@@ -126,11 +126,12 @@ Slash commands: `{ id, label, apply, aliases?, section?, block? }`. `apply` is a
 | `getDoc()` | Current text. |
 | `setDoc(doc)` | Loads a doc with a fresh undo history. |
 | `focus()` | Focuses the editor. |
+| `reveal(pos)` | Scrolls `pos`'s line to the top and flashes it (`md-flash`), without moving the cursor or focus. |
 | `run(command)` | Runs an `MdCommandName` or any `StateCommand`, then refocuses. Returns whether it applied. |
 
 `MdCommandName`: `timestamp`, `h1`, `h2`, `h3`, `bold`, `italic`, `underline`, `strike`, `inlineCode`, `sup`, `red`, `blue`, `green`, `defaultColor`, `code`, `codeBlock`, `hr`, `link`, `bulletList`, `orderedList`, `taskList`, `quote`, `table`, `date`.
 
-Also exported: `mdCommands`, `toggleHeading(level)`, `setColor(color | null)`, `insertTimestamp`, `formatTime`, `formatTimestamp`, `parseTimestamp` and `extractTimestamps(state)` (every timestamp in doc order, never inside code).
+Also exported: `mdCommands`, `toggleHeading(level)`, `setColor(color | null)`, `insertTimestamp`, `formatTime`, `formatTimestamp`, `parseTimestamp`, `revealLine(view, pos)` and `extractTimestamps(state)` (every timestamp in doc order, never inside code).
 
 Keys: Mod-b bold, Mod-i italic, Mod-u underline, Tab indents (4 spaces at a bare cursor), Shift-Tab outdents, Mod-Enter toggles a task or seeks a pill. Escape then Tab leaves the editor, and Ctrl-m (Shift-Alt-m on macOS) switches Tab to moving focus.
 
@@ -147,7 +148,7 @@ Markdown editor, Completions, Copy code, Copied, Copy failed, Jump to $1, Toggle
 Set any of these on the editor or a parent. All are optional, the fallbacks follow `currentColor` and system colors, so light and dark hosts both work.
 
 - Text: `--md-font`, `--md-font-mono`, `--md-line-height`, `--md-text`, `--md-muted`
-- Accent: `--md-accent`, `--md-on-accent`, `--md-selection`
+- Accent: `--md-accent`, `--md-on-accent`, `--md-selection`, `--md-flash`
 - Surfaces: `--md-surface`, `--md-menu-bg`, `--md-code-bg`, `--md-code-text`, `--md-border`, `--md-radius`, `--md-shadow`, `--md-z-tooltip`
 - Pills: `--md-pill-bg`, `--md-pill-text`
 - Note colors: `--md-red`, `--md-blue`, `--md-green`
