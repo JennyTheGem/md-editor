@@ -193,6 +193,24 @@ describe("MarkdownEditor", () => {
     expect(h.run("timestamp")).toBe(false)
   })
 
+  it("reveal flashes the line without moving the cursor, then clears", () => {
+    vi.useFakeTimers()
+    const ref = createRef<MarkdownEditorHandle>()
+    render(<MarkdownEditor ref={ref} defaultValue={"a\nb\nc"} />)
+    const h = ref.current
+    if (!h?.view) throw new Error("no handle")
+    const content = h.view.contentDOM
+    const flashed = () => [...content.querySelectorAll(".md-flash")].map((l) => l.textContent)
+    h.reveal(3)
+    expect(flashed()).toEqual(["b"])
+    expect(h.view.state.selection.main.head).toBe(0)
+    h.reveal(99)
+    expect(flashed()).toEqual(["c"])
+    vi.advanceTimersByTime(1500)
+    expect(flashed()).toEqual([])
+    vi.useRealTimers()
+  })
+
   it("calls only the newest onChange without a remount", () => {
     const first = vi.fn()
     const second = vi.fn()

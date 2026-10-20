@@ -49,6 +49,7 @@ const baseTheme = EditorView.baseTheme({
   ".cm-content .md-code-line": {
     fontFamily: mono, fontSize: ".9em", background: codeBg, color: "var(--md-code-text, inherit)", paddingInline: "1em",
   },
+  ".cm-content .cm-line.md-flash": { background: `var(--md-flash, color-mix(in srgb, ${accent} 18%, transparent))` },
   ".md-code-first": { position: "relative", paddingTop: ".35em", borderTopLeftRadius: radius, borderTopRightRadius: radius },
   ".md-code-last": { paddingBottom: ".35em", borderBottomLeftRadius: radius, borderBottomRightRadius: radius },
   ".md-code-line .md-tok-keyword": { color: `var(--md-tok-keyword, ${accent})` },

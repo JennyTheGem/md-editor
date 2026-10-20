@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react"
 import type { JSX, RefObject } from "react"
 import { EditorView } from "@codemirror/view"
 import { mdCommands } from "./commands/index.ts"
+import { revealLine } from "./flash.ts"
 import { createMdState, setDoc as setEditorDoc, updateMdEditor } from "./editor.ts"
 import type { MarkdownEditorProps, MdEditorOptions, MdPhrases, MdRuntimeOptions } from "./options.ts"
 
@@ -88,6 +89,9 @@ export function MarkdownEditor(props: MarkdownEditorProps): JSX.Element {
       applied.current = runtimeOf(latest.current)
     },
     focus: () => viewRef.current?.focus(),
+    reveal(pos) {
+      if (viewRef.current) revealLine(viewRef.current, pos)
+    },
     run(command) {
       const v = viewRef.current
       if (!v) return false

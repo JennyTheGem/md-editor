@@ -5,6 +5,7 @@ import { Compartment, EditorState, Prec } from "@codemirror/state"
 import type { Extension, StateEffect } from "@codemirror/state"
 import { EditorView, drawSelection, dropCursor, keymap, placeholder } from "@codemirror/view"
 import { formatKeymap } from "./commands/index.ts"
+import { flashField } from "./flash.ts"
 import { completion } from "./complete/completion.ts"
 import { mdConfig, slashCommandsFacet } from "./options.ts"
 import type { MdEditorOptions, MdRuntimeOptions } from "./options.ts"
@@ -45,6 +46,7 @@ export function mdEditor(o: MdEditorOptions = {}): Extension {
     revealTracking,
     stylesPlugin,
     previewClicks,
+    flashField,
     o.timestamps ? timestamps() : [],
     previewC.of(previewExt(o.livePreview)),
     completion(md.language, { slash: o.slash !== false, emoji: o.emoji ?? true }),

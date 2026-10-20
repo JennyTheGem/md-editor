@@ -59,6 +59,8 @@ export interface MarkdownEditorHandle {
   getDoc(): string
   setDoc(doc: string): void
   focus(): void
+  // Scroll to pos's line and flash it, without moving the cursor
+  reveal(pos: number): void
   run(command: MdCommandName | StateCommand): boolean
 }
 
