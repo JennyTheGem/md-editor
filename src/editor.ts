@@ -11,9 +11,10 @@ import { mdConfig, slashCommandsFacet } from "./options.ts"
 import type { MdEditorOptions, MdRuntimeOptions } from "./options.ts"
 import { previewClicks, taskKeymap } from "./preview/clicks.ts"
 import { hidePlugin } from "./preview/hide.ts"
+import { progressPlugin } from "./preview/progress.ts"
 import { revealTracking, setFocused } from "./preview/reveal.ts"
 import { stylesPlugin } from "./preview/styles.ts"
-import { tables } from "./preview/tables.ts"
+import { tableKeymap, tables } from "./preview/tables.ts"
 import { findReplace } from "./search.ts"
 import { createMarkdown, defaultCodeLanguages } from "./syntax.ts"
 import { mdTheme } from "./theme.ts"
@@ -24,7 +25,7 @@ const phrasesC = new Compartment()
 const placeholderC = new Compartment()
 const slashC = new Compartment()
 
-const livePreviewExt = (): Extension => [hidePlugin, tables()]
+const livePreviewExt = (): Extension => [hidePlugin, progressPlugin, tables()]
 const previewExt = (on: boolean | undefined): Extension => (on === false ? [] : livePreviewExt())
 const placeholderExt = (text: string | undefined): Extension => (text ? placeholder(text) : [])
 
@@ -51,7 +52,7 @@ export function mdEditor(o: MdEditorOptions = {}): Extension {
     o.timestamps ? timestamps() : [],
     previewC.of(previewExt(o.livePreview)),
     completion(md.language, { slash: o.slash !== false, emoji: o.emoji ?? true }),
-    Prec.high(keymap.of([...formatKeymap, ...taskKeymap])),
+    Prec.high(keymap.of([...tableKeymap, ...formatKeymap, ...taskKeymap])),
     findReplace,
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
     mdTheme,

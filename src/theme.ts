@@ -86,6 +86,11 @@ const baseTheme = EditorView.baseTheme({
   ".md-link": { color: accent, textDecoration: "underline" },
   ".md-syntax": { opacity: 0.45 },
   ".md-task-done": { textDecoration: "line-through", opacity: 0.6 },
+  ".cm-content .md-progress": {
+    marginInlineStart: ".5em", padding: "0 .4em", borderRadius: radius, background: surface, color: muted,
+    fontSize: ".75em", fontWeight: 400, fontVariantNumeric: "tabular-nums", verticalAlign: "middle", userSelect: "none",
+  },
+  ".cm-content .md-progress-done": { color: accent },
   ".md-color-red": { color: red },
   ".md-color-blue": { color: `var(--md-blue, ${MD_COLORS.blue})` },
   ".md-color-green": { color: green },
@@ -134,6 +139,17 @@ const baseTheme = EditorView.baseTheme({
   ".cm-content .md-table": { borderCollapse: "collapse", fontSize: ".95em" },
   ".md-table th, .md-table td": { border: `1px solid ${border}`, padding: ".3em .6em", verticalAlign: "top" },
   ".md-table th": { background: surface, fontWeight: 600, textAlign: "start" },
+  ".md-table [data-editing]": { outline: `2px solid ${accent}`, outlineOffset: "-2px", cursor: "text" },
+  ".md-table-menu": {
+    position: "absolute", zIndex: "var(--md-z-tooltip, 100)", display: "flex", flexDirection: "column", padding: ".25em",
+    background: "var(--md-menu-bg, Canvas)", color: "var(--md-text, CanvasText)", border: `1px solid ${border}`,
+    borderRadius: radius, boxShadow: "var(--md-shadow, none)", fontSize: ".9em",
+  },
+  ".md-table-menu button": {
+    padding: ".3em .7em", border: "none", borderRadius: radius, background: "transparent", color: "inherit",
+    font: "inherit", textAlign: "start", cursor: "pointer", whiteSpace: "nowrap",
+  },
+  ".md-table-menu button:hover, .md-table-menu button:focus-visible": { background: surface, outline: "none" },
 
   [`&light ${menu}, &dark ${menu}`]: {
     background: "var(--md-menu-bg, Canvas)", color: "var(--md-text, CanvasText)", border: `1px solid ${border}`,

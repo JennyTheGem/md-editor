@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { EditorState } from "@codemirror/state"
-import { runScopeHandlers } from "@codemirror/view"
+import { keymap, runScopeHandlers } from "@codemirror/view"
 import type { EditorView, WidgetType } from "@codemirror/view"
 import { mdParser } from "../src/syntax.ts"
 import { mdConfig } from "../src/options.ts"
-import { renderTable, rowCellSpans, tableField, tables } from "../src/preview/tables.ts"
+import { applyTableOp, renderTable, rowCellSpans, tableField, tableKeymap, tables } from "../src/preview/tables.ts"
 import { revealField, revealTracking, setFocused } from "../src/preview/reveal.ts"
 import { mdState, mdView } from "./helpers.ts"
 
@@ -115,30 +115,65 @@ describe("tables in a view", () => {
   const doc = "top\n| a | b |\n| --- | --- |\n| c |   d |\n\nend"
   const ext = [revealTracking, mdConfig.of({}), tables()]
 
-  it("enters a rendered table with the arrow keys", () => {
+  const cell = (view: EditorView, r: number, c: number) =>
+    view.contentDOM.querySelector<HTMLElement>(`.md-table-wrap [data-row="${r}"][data-col="${c}"]`)
+  const key = (el: Element, k: string, shiftKey = false) => {
+    const e = new KeyboardEvent("keydown", { key: k, shiftKey, bubbles: true, cancelable: true })
+    el.dispatchEvent(e)
+    return e.defaultPrevented
+  }
+  const type = (td: HTMLElement, text: string) => {
+    td.textContent = text
+    td.dispatchEvent(new Event("input", { bubbles: true }))
+  }
+
+  it("arrow keys into a rendered table edit its first cell", () => {
     const view = mdView(doc, ext, 1)
     try {
       expect(press(view, "ArrowDown")).toBe(true)
-      expect(view.state.selection.main.anchor).toBe(4)
-      view.dispatch({ selection: { anchor: view.state.doc.line(5).from } })
-      expect(press(view, "ArrowUp")).toBe(true)
-      expect(view.state.selection.main.anchor).toBe(view.state.doc.line(4).from)
-      view.dispatch({ selection: { anchor: view.state.doc.line(5).from } })
+      expect(document.activeElement).toBe(cell(view, 0, 0))
+      expect(cell(view, 0, 0)?.hasAttribute("data-editing")).toBe(true)
+      view.dispatch({ selection: { anchor: view.state.doc.line(6).from } })
       expect(press(view, "ArrowDown")).toBe(false)
     } finally {
       view.destroy()
     }
   })
 
-  it("puts the cursor in the clicked cell", () => {
+  it("edits a clicked cell in place and keeps the table rendered", () => {
     const view = mdView(doc, ext, doc.length)
     try {
-      const td = view.contentDOM.querySelector<HTMLElement>('.md-table-wrap td[data-row="1"][data-col="1"]')
-      expect(td?.textContent).toBe("d")
+      const td = cell(view, 1, 1)!
       const e = new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 })
-      td?.dispatchEvent(e)
+      td.dispatchEvent(e)
       expect(e.defaultPrevented).toBe(true)
-      expect(view.state.selection.main.anchor).toBe(doc.indexOf("   d") + 3)
+      expect(td.dataset.editing).toBe("")
+      type(td, "x|y")
+      expect(view.state.doc.line(4).text).toBe("| c |   x\\|y |")
+      expect(cell(view, 1, 1)).toBe(td)
+      expect(td.textContent).toBe("x|y")
+      expect(key(td, "Tab")).toBe(true)
+      expect(document.activeElement).toBe(cell(view, 2, 0))
+      type(cell(view, 2, 0)!, "e")
+      expect(view.state.doc.line(5).text).toBe("| e |  |")
+      expect(key(cell(view, 2, 0)!, "Escape")).toBe(true)
+      expect(view.state.selection.main.anchor).toBe(view.state.doc.line(6).from)
+      expect(cell(view, 2, 0)?.textContent).toBe("e")
+    } finally {
+      view.destroy()
+    }
+  })
+
+  it("tabs between raw cells", () => {
+    const raw = "| a | bb |\n| - | - |\n| c | d |"
+    const view = mdView(raw, [mdConfig.of({}), keymap.of(tableKeymap)], 1)
+    try {
+      expect(press(view, "Tab")).toBe(true)
+      expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("bb")
+      expect(press(view, "Tab")).toBe(true)
+      expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("c")
+      view.dispatch({ selection: { anchor: raw.length - 2 } })
+      expect(press(view, "Tab")).toBe(false)
     } finally {
       view.destroy()
     }
@@ -168,5 +203,20 @@ describe("tables in a view", () => {
       plain.destroy()
       on.destroy()
     }
+  })
+})
+
+describe("applyTableOp", () => {
+  const src = "| a | b |\n| :- | -: |\n| c |"
+  it("inserts and deletes rows and columns", () => {
+    expect(applyTableOp(src, "rowBelow", 0, 0)).toBe("| a | b |\n| :- | -: |\n|  |  |\n| c |  |")
+    expect(applyTableOp(src, "colRight", 1, 0)).toBe("| a |  | b |\n| :- | --- | -: |\n| c |  |  |")
+    expect(applyTableOp(src, "delCol", 0, 0)).toBe("| b |\n| -: |\n|  |")
+    expect(applyTableOp(src, "delRow", 1, 0)).toBe("| a | b |\n| :- | -: |")
+  })
+  it("refuses to drop the header or the last column", () => {
+    expect(applyTableOp(src, "delRow", 0, 0)).toBeNull()
+    expect(applyTableOp(src, "rowAbove", 0, 0)).toBeNull()
+    expect(applyTableOp("| a |\n| - |", "delCol", 0, 0)).toBeNull()
   })
 })

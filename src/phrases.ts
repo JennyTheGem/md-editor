@@ -7,7 +7,8 @@ export const MD_PHRASES = [
   "Inline code", "Superscript", "Link", "Bullet list", "Numbered list", "Task list", "Quote", "Code block",
   "Table", "Divider", "Today's date", "Callout", "Note", "Tip", "Warning", "Danger",
   "Find", "Replace", "next", "previous", "match case", "regexp", "by word", "replace", "replace all", "close",
-  "Toggle replace", "$1 of $2", "No results",
+  "Toggle replace", "$1 of $2", "No results", "$1 of $2 done",
+  "Insert row above", "Insert row below", "Insert column left", "Insert column right", "Delete row", "Delete column",
   "current match", "on line", "replaced match on line $", "replaced $ matches",
 ] as const
 
