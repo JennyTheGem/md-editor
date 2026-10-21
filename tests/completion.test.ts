@@ -50,7 +50,7 @@ describe("slash triggers", () => {
 describe("slash listing and ranking", () => {
   it("lists every command in sections for a bare slash, host sections after Insert", () => {
     const r = slash("/")!
-    expect(r.options).toHaveLength(19 + host.length)
+    expect(r.options).toHaveLength(20 + host.length)
     expect(r.options.every((o) => sectionOf(o))).toBe(true)
     const rank = (o: Completion) => Number(sectionOf(o)!.rank)
     const names = [...r.options].sort((a, b) => rank(a) - rank(b)).map((o) => sectionOf(o)!.name)

@@ -138,6 +138,18 @@ describe("headless", () => {
     expect(view.state.selection.main.from).toBe(2)
     expect(view.state.selection.main.empty).toBe(true)
   })
+
+  it("opens find on Mod-f and replace on Mod-h, translated, revealing the cursor line", () => {
+    const key = (k: string) => runScopeHandlers(view, new KeyboardEvent("keydown", { key: k, ctrlKey: true }), "editor")
+    const view = mount("x\n**b**", { phrases: { Find: "Suchen" } })
+    view.dispatch({ selection: { anchor: 4 } })
+    expect(view.contentDOM.querySelectorAll(".cm-line")[1].textContent).toBe("b")
+    expect(key("f")).toBe(true)
+    expect(view.dom.querySelector<HTMLInputElement>(".cm-search [name=search]")?.placeholder).toBe("Suchen")
+    expect(view.contentDOM.querySelectorAll(".cm-line")[1].textContent).toBe("**b**")
+    expect(key("h")).toBe(true)
+    expect(document.activeElement).toBe(view.dom.querySelector(".cm-search [name=replace]"))
+  })
 })
 
 describe("timestamps are opt-in", () => {

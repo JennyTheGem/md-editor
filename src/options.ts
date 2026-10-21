@@ -10,12 +10,16 @@ export type MdColor = "red" | "blue" | "green"
 export type MdCommandName =
   | "timestamp" | "h1" | "h2" | "h3" | "bold" | "italic" | "underline" | "strike" | "inlineCode" | "sup"
   | "red" | "blue" | "green" | "defaultColor" | "code" | "codeBlock" | "hr" | "link"
-  | "bulletList" | "orderedList" | "taskList" | "quote" | "table" | "date"
+  | "bulletList" | "orderedList" | "taskList" | "quote" | "callout" | "table" | "date"
 
 export type MdPhrases = Partial<Record<MdPhrase, string>> & Readonly<Record<string, string>>
 
 // Image URLs, drawn as currentColor CSS masks
-export interface MdIcons { timestamp?: string; copy?: string; copied?: string }
+export interface MdIcons {
+  timestamp?: string; copy?: string; copied?: string
+  // Callout types
+  note?: string; tip?: string; warning?: string; danger?: string
+}
 
 export interface TimestampOptions {
   // Media time in seconds, null when nothing is loaded

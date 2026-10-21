@@ -5,7 +5,9 @@ export const MD_PHRASES = [
   "$1+click to open link", "Ctrl", "Cmd", "text", "Link text", "Column", "Insert", "Format", "Blocks",
   "Timestamp", "Heading 1", "Heading 2", "Heading 3", "Bold", "Italic", "Underline", "Strikethrough",
   "Inline code", "Superscript", "Link", "Bullet list", "Numbered list", "Task list", "Quote", "Code block",
-  "Table", "Divider", "Today's date",
+  "Table", "Divider", "Today's date", "Callout", "Note", "Tip", "Warning", "Danger",
+  "Find", "Replace", "next", "previous", "all", "match case", "regexp", "by word", "replace", "replace all", "close",
+  "current match", "on line", "replaced match on line $", "replaced $ matches",
 ] as const
 
 export type MdPhrase = (typeof MD_PHRASES)[number]

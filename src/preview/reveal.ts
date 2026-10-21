@@ -1,3 +1,4 @@
+import { searchPanelOpen } from "@codemirror/search"
 import { StateEffect, StateField } from "@codemirror/state"
 import type { EditorState, Extension } from "@codemirror/state"
 import { EditorView, ViewPlugin } from "@codemirror/view"
@@ -39,7 +40,8 @@ export const revealField = StateField.define<RevealState>({
     }
     if (frozen && !freezing && (tr.docChanged || (tr.selection && !tr.isUserEvent("select.pointer")))) frozen = false
     // Old spans are stale after a doc change, so recompute even while frozen
-    const spans = !focused ? [] : frozen && !tr.docChanged ? v.spans : computeSpans(tr.state)
+    // An open find panel holds focus, so the current match's line stays revealed
+    const spans = !focused && !searchPanelOpen(tr.state) ? [] : frozen && !tr.docChanged ? v.spans : computeSpans(tr.state)
     if (focused === v.focused && frozen === v.frozen && sameSpans(spans, v.spans)) return v
     return { focused, frozen, spans }
   },

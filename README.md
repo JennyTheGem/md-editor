@@ -1,6 +1,6 @@
 # @uplift-beyond/md-editor
 
-A React markdown editor on CodeMirror 6 with live preview. Markdown syntax hides on lines without the cursor, tables render as real tables, code blocks get a language label and a copy button, and `/` and `:` open slash and emoji menus. Timestamp pills (`@[1:23]`) are an opt-in feature for video notes.
+A React markdown editor on CodeMirror 6 with live preview. Markdown syntax hides on lines without the cursor, tables render as real tables, code blocks get a language label and a copy button, callouts (`> [!tip]`) render as tinted blocks, `/` and `:` open slash and emoji menus, and Mod-f / Mod-h open find and replace. Timestamp pills (`@[1:23]`) are an opt-in feature for video notes.
 
 Everything comes from one lezer syntax tree (CommonMark + GFM + three inline additions), so code, tables and links never get mixed up by regexes. No host app imports, no i18n library, no CSS file: strings come in as phrases and colors as CSS variables.
 
@@ -99,7 +99,7 @@ Mount-only options are read when the state is created (mount or `setDoc`):
 | `slash` | `true` | Slash menu. |
 | `emoji` | `true` | Emoji menu. `true` = built-in lazy set, `false` = off, or a loader `() => Promise<EmojiEntry[]>`. |
 | `timestamps` | none | `{ now, seek, trigger? }`. Without it there are no pills, no `#` trigger and no timestamp command. |
-| `icons` | `{}` | Image URLs for `timestamp`, `copy`, `copied`, drawn as `currentColor` masks. |
+| `icons` | `{}` | Image URLs for `timestamp`, `copy`, `copied` and the callout types `note`, `tip`, `warning`, `danger`, drawn as `currentColor` masks. A missing callout icon shows only the title. |
 | `codeLanguages` | `defaultCodeLanguages` | Fence highlighting: js/jsx, ts/tsx, css, html, json, python. |
 | `revealDelay` | `400` | Ms the raw markdown stays put after a mouse release, so text never shifts under a click. |
 | `onChange` | none | `(doc, state)` on every doc change. Never called by `setDoc`. |
@@ -129,19 +129,23 @@ Slash commands: `{ id, label, apply, aliases?, section?, block? }`. `apply` is a
 | `reveal(pos)` | Scrolls `pos`'s line to the top and flashes it (`md-flash`), without moving the cursor or focus. |
 | `run(command)` | Runs an `MdCommandName` or any `StateCommand`, then refocuses. Returns whether it applied. |
 
-`MdCommandName`: `timestamp`, `h1`, `h2`, `h3`, `bold`, `italic`, `underline`, `strike`, `inlineCode`, `sup`, `red`, `blue`, `green`, `defaultColor`, `code`, `codeBlock`, `hr`, `link`, `bulletList`, `orderedList`, `taskList`, `quote`, `table`, `date`.
+`MdCommandName`: `timestamp`, `h1`, `h2`, `h3`, `bold`, `italic`, `underline`, `strike`, `inlineCode`, `sup`, `red`, `blue`, `green`, `defaultColor`, `code`, `codeBlock`, `hr`, `link`, `bulletList`, `orderedList`, `taskList`, `quote`, `callout`, `table`, `date`.
 
 Also exported: `mdCommands`, `toggleHeading(level)`, `setColor(color | null)`, `insertTimestamp`, `formatTime`, `formatTimestamp`, `parseTimestamp`, `revealLine(view, pos)` and `extractTimestamps(state)` (every timestamp in doc order, never inside code).
 
 Keys: Mod-b bold, Mod-i italic, Mod-u underline, Tab indents (4 spaces at a bare cursor), Shift-Tab outdents, Mod-Enter toggles a task or seeks a pill. Escape then Tab leaves the editor, and Ctrl-m (Shift-Alt-m on macOS) switches Tab to moving focus.
 
+Find and replace (`@codemirror/search`, panel on top): Mod-f find, Mod-h replace (Cmd-Alt-f on macOS, where Cmd-h hides the app), Enter or F3 / Mod-g next, Shift for previous, Escape closes. Mod-d selects the next occurrence, Mod-Shift-l every match. While the panel is open the line of the current match shows its raw markdown.
+
 ## Phrases
 
 Every UI string goes through CodeMirror's `EditorState.phrases`. The keys are the English defaults, listed in `MD_PHRASES`; pass a translation for any of them:
 
-Markdown editor, Completions, Copy code, Copied, Copy failed, Jump to $1, Toggle task, $1+click to open link, Ctrl, Cmd, text, Link text, Column, Insert, Format, Blocks, Timestamp, Heading 1, Heading 2, Heading 3, Bold, Italic, Underline, Strikethrough, Inline code, Superscript, Link, Bullet list, Numbered list, Task list, Quote, Code block, Table, Divider, Today's date.
+Markdown editor, Completions, Copy code, Copied, Copy failed, Jump to $1, Toggle task, $1+click to open link, Ctrl, Cmd, text, Link text, Column, Insert, Format, Blocks, Timestamp, Heading 1, Heading 2, Heading 3, Bold, Italic, Underline, Strikethrough, Inline code, Superscript, Link, Bullet list, Numbered list, Task list, Quote, Code block, Table, Divider, Today's date, Callout, Note, Tip, Warning, Danger.
 
-`$1` is filled in (a time, or the Ctrl/Cmd label).
+Find panel (CodeMirror's own keys): Find, Replace, next, previous, all, match case, regexp, by word, replace, replace all, close, current match, on line, replaced match on line $, replaced $ matches.
+
+`$1` is filled in (a time, or the Ctrl/Cmd label), `$` with a line number or match count.
 
 ## CSS variables
 
@@ -152,6 +156,7 @@ Set any of these on the editor or a parent. All are optional, the fallbacks foll
 - Surfaces: `--md-surface`, `--md-menu-bg`, `--md-code-bg`, `--md-code-text`, `--md-border`, `--md-radius`, `--md-shadow`, `--md-z-tooltip`
 - Pills: `--md-pill-bg`, `--md-pill-text`
 - Note colors: `--md-red`, `--md-blue`, `--md-green`
+- Callouts: note uses `--md-accent`, tip `--md-green`, danger `--md-red`, warning `--md-warning` (falls back to a red-green mix). Each gets a flat tint of its color and a colored title line.
 - Code tokens: `--md-tok-keyword`, `--md-tok-string`, `--md-tok-number`, `--md-tok-comment`, `--md-tok-function`, `--md-tok-type`, `--md-tok-property`
 
 Every class the package adds starts with `md-`.
@@ -164,6 +169,7 @@ The document is plain markdown (UTF-8, `\n`): CommonMark + GFM tables, task list
 - Colors: `<span style="color:#e06c75">x</span>` (red), `#61afef` (blue), `#98c379` (green), exported as `MD_COLORS`. Other values keep their bytes but show uncolored. Document text never reaches a style attribute.
 - Underline: `<u>x</u>`. Superscript: `^x^` (spaces allowed; `[^1]` and `2^10` stay text).
 - Emoji are stored as Unicode characters, never `:shortcodes:`.
+- Callouts (Obsidian syntax): a blockquote whose first line starts with `[!type]`, e.g. `> [!tip] Optional title`. Types `note`, `tip`, `warning`, `danger`, case-insensitive; anything else shows as a note. A `+` or `-` fold mark is kept but ignored. Without a title the type's phrase is shown. The raw line returns while the cursor is in the callout.
 
 ## Offline
 

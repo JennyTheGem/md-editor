@@ -181,6 +181,12 @@ describe("blocks", () => {
     expect(selected(s)).toBe("Column 1")
   })
 
+  it("inserts a callout under text with its type selected", () => {
+    const s = run("callout", "text", 4)!
+    expect(s.doc.toString()).toBe("text\n\n> [!note] ")
+    expect(selected(s)).toBe("note")
+  })
+
   it("inserts the local date", () => {
     const s = run("date", "", 0)!
     const d = new Date()

@@ -11,7 +11,7 @@ import { mdState, mdView } from "./helpers.ts"
 
 const FIXTURES = [
   "# ", "#", '<span style="color:#e06c75"></span>', "<u></u>", "```js\nconst a = 1", "-  [ ] x",
-  "***x***", "| a |\n| - |\n| b |", "[1:99]", "a\\*b", "> q\n> r",
+  "***x***", "| a |\n| - |\n| b |", "[1:99]", "a\\*b", "> q\n> r", "> [!x]", "> [!tip]-  ",
 ]
 
 function built(doc: string, anchor: number, focused: boolean): EditorState {
@@ -146,6 +146,16 @@ describe("live preview", () => {
     expect(q(view, ".md-task")).not.toBeNull()
     focus(view, 3)
     expect(q(view, ".md-task")).toBeNull()
+  })
+
+  it("renders callouts, unknown types as notes, raw while the cursor is inside", () => {
+    const view = mount("> [!TIP] Hi\n> body\n\n> [!foo]\n> x\n\n> plain")
+    expect(q(view, ".cm-line.md-callout.md-callout-tip.md-callout-first")).not.toBeNull()
+    expect(q(view, ".cm-line.md-callout-note.md-callout-first")).not.toBeNull()
+    expect(view.contentDOM.querySelectorAll(".md-quote")).toHaveLength(1)
+    expect(lineTexts(view)).toEqual(["Hi", "body", "", "Note", "x", "", "plain"])
+    focus(view, 15)
+    expect(lineTexts(view).slice(0, 4)).toEqual(["[!TIP] Hi", "> body", "", "Note"])
   })
 })
 

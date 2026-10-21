@@ -14,6 +14,7 @@ import { hidePlugin } from "./preview/hide.ts"
 import { revealTracking, setFocused } from "./preview/reveal.ts"
 import { stylesPlugin } from "./preview/styles.ts"
 import { tables } from "./preview/tables.ts"
+import { findReplace } from "./search.ts"
 import { createMarkdown, defaultCodeLanguages } from "./syntax.ts"
 import { mdTheme } from "./theme.ts"
 import { timestamps } from "./timestamps/timestamps.ts"
@@ -51,6 +52,7 @@ export function mdEditor(o: MdEditorOptions = {}): Extension {
     previewC.of(previewExt(o.livePreview)),
     completion(md.language, { slash: o.slash !== false, emoji: o.emoji ?? true }),
     Prec.high(keymap.of([...formatKeymap, ...taskKeymap])),
+    findReplace,
     keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
     mdTheme,
     EditorView.contentAttributes.of((view) => ({ "aria-label": view.state.phrase("Markdown editor") })),

@@ -83,6 +83,9 @@ export function toggleLinePrefixSpec(kind: PrefixKind): SpecBuilder {
 
 export const insertHrSpec: SpecBuilder = (state) => blockInsert(state, "---\n", 4, 4)
 
+// "note" selected, so typing picks the type
+export const insertCalloutSpec: SpecBuilder = (state) => blockInsert(state, "> [!note] ", 4, 8)
+
 export const insertCodeBlockSpec: SpecBuilder = (state) => {
   const { from, to, empty } = state.selection.main
   const lines = rangeLines(state, from, to)

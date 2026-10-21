@@ -2,10 +2,12 @@ import type { EditorState, Extension, Range } from "@codemirror/state"
 import { Decoration, EditorView, ViewPlugin } from "@codemirror/view"
 import type { DecorationSet, ViewUpdate } from "@codemirror/view"
 import type { SyntaxNode } from "@lezer/common"
+import { mdConfig } from "../options.ts"
+import { CALLOUT_LABELS, calloutOf } from "./callouts.ts"
 import { isLineRevealed, isRangeRevealed, revealField } from "./reveal.ts"
 import { baseChanged, walk } from "./styles.ts"
 import type { Span } from "./styles.ts"
-import { BulletWidget, CheckboxWidget } from "./widgets.ts"
+import { BulletWidget, CalloutWidget, CheckboxWidget } from "./widgets.ts"
 
 const HIDDEN = Decoration.replace({})
 const BULLET = Decoration.replace({ widget: new BulletWidget() })
@@ -68,6 +70,14 @@ export function buildHidden(state: EditorState, ranges: readonly Span[]): { deco
     node.getChildren("QuoteMark").forEach(quote)
   }
 
+  // Raw while the cursor is anywhere in the callout, like fences
+  const callout = (node: SyntaxNode) => {
+    const c = calloutOf(state, node)
+    if (!c || isRangeRevealed(state, node.from, node.to)) return
+    const widget = new CalloutWidget(c.title ? "" : state.phrase(CALLOUT_LABELS[c.type]), state.facet(mdConfig).icons[c.type])
+    hide(c.from, c.to, Decoration.replace({ widget }))
+  }
+
   walk(state, ranges, (n, _range, fresh) => {
     switch (n.name) {
       case "FencedCode":
@@ -90,6 +100,7 @@ export function buildHidden(state: EditorState, ranges: readonly Span[]): { deco
     if (MARKS.has(n.name)) hideMark(n.from, n.to)
     else if (n.name === "HeaderMark") headerMark(n.node)
     else if (n.name === "QuoteMark") quote(n)
+    else if (n.name === "Blockquote") callout(n.node)
     else if (n.name === "Escape") hideMark(n.from, n.from + 1)
     else if (n.name === "Link") link(n.node)
     else if (n.name === "ListMark") listMark(n.node)

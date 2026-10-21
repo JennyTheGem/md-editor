@@ -7,6 +7,7 @@ import type { SyntaxNode, SyntaxNodeRef } from "@lezer/common"
 import { colorOfOpenTag } from "../colors.ts"
 import { mdConfig } from "../options.ts"
 import { modKeyLabel } from "../phrases.ts"
+import { calloutOf } from "./callouts.ts"
 import { CodeHeaderWidget } from "./widgets.ts"
 
 export type Span = { from: number; to: number }
@@ -128,7 +129,12 @@ export function buildStyles(state: EditorState, ranges: readonly Span[]): Decora
     const heading = /^ATXHeading([1-6])$/.exec(n.name)
     if (heading) return lines(n, range, `md-h${heading[1]}`)
     switch (n.name) {
-      case "Blockquote": return lines(n, range, "md-quote", "md-quote-first", "md-quote-last")
+      case "Blockquote": {
+        const c = calloutOf(state, n.node)
+        return c
+          ? lines(n, range, `md-callout md-callout-${c.type}`, "md-callout-first", "md-callout-last")
+          : lines(n, range, "md-quote", "md-quote-first", "md-quote-last")
+      }
       case "CodeBlock": return lines(n, range, "md-code-line", "md-code-first", "md-code-last")
       case "HorizontalRule": return lines(n, range, "md-hr")
       case "Table": return lines(n, range, "md-table-row")

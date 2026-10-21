@@ -5,7 +5,7 @@ import { mdConfig } from "../options.ts"
 import type { MdColor, MdCommandName } from "../options.ts"
 import { formatTimestamp } from "../timestamps/format.ts"
 import {
-  codeSpec, insertCodeBlockSpec, insertDateSpec, insertHrSpec, insertLinkSpec, insertTab, insertTableSpec,
+  codeSpec, insertCalloutSpec, insertCodeBlockSpec, insertDateSpec, insertHrSpec, insertLinkSpec, insertTab, insertTableSpec,
   toggleHeadingSpec, toggleLinePrefixSpec,
 } from "./blocks.ts"
 import { setColorSpec } from "./color.ts"
@@ -55,6 +55,7 @@ export const mdCommandSpecs: Readonly<Record<MdCommandName, SpecBuilder>> = {
   orderedList: toggleLinePrefixSpec("ordered"),
   taskList: toggleLinePrefixSpec("task"),
   quote: toggleLinePrefixSpec("quote"),
+  callout: insertCalloutSpec,
   table: insertTableSpec,
   date: insertDateSpec,
 }

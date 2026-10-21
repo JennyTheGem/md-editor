@@ -31,6 +31,7 @@ const BUILTINS: readonly Builtin[] = [
   def("Blocks", "ol", "orderedList", "Numbered list", ["numbered"]),
   def("Blocks", "todo", "taskList", "Task list", ["task", "checkbox"]),
   def("Blocks", "quote", "quote", "Quote", ["blockquote"]),
+  def("Blocks", "callout", "callout", "Callout", ["note", "tip", "warning", "danger"]),
   def("Blocks", "code", "codeBlock", "Code block", ["codeblock", "fence"]),
   def("Blocks", "table", "table", "Table"),
   def("Blocks", "hr", "hr", "Divider", ["divider", "line"]),

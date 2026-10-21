@@ -102,3 +102,37 @@ export class CodeHeaderWidget extends WidgetType {
     return false
   }
 }
+
+// Stands in for "[!type] ": the icon, plus the default title when the line has none
+export class CalloutWidget extends WidgetType {
+  readonly label: string
+  readonly icon: string | undefined
+
+  constructor(label: string, icon?: string) {
+    super()
+    this.label = label
+    this.icon = icon
+  }
+
+  eq(other: CalloutWidget): boolean {
+    return other.label === this.label && other.icon === this.icon
+  }
+
+  toDOM(): HTMLElement {
+    const head = document.createElement("span")
+    head.className = "md-callout-head"
+    if (this.icon) {
+      const mark = document.createElement("span")
+      mark.className = "md-icon"
+      mark.setAttribute("aria-hidden", "true")
+      setIcon(mark, this.icon)
+      head.append(mark)
+    }
+    if (this.label) head.append(this.label)
+    return head
+  }
+
+  ignoreEvent(): boolean {
+    return false
+  }
+}
