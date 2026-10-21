@@ -19,6 +19,9 @@ export interface MdIcons {
   timestamp?: string; copy?: string; copied?: string
   // Callout types
   note?: string; tip?: string; warning?: string; danger?: string
+  // Find panel, buttons fall back to their text label
+  findNext?: string; findPrev?: string; close?: string; expand?: string
+  matchCase?: string; wholeWord?: string; regexp?: string
 }
 
 export interface TimestampOptions {

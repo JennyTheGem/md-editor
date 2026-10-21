@@ -145,10 +145,33 @@ describe("headless", () => {
     view.dispatch({ selection: { anchor: 4 } })
     expect(view.contentDOM.querySelectorAll(".cm-line")[1].textContent).toBe("b")
     expect(key("f")).toBe(true)
-    expect(view.dom.querySelector<HTMLInputElement>(".cm-search [name=search]")?.placeholder).toBe("Suchen")
+    expect(view.dom.querySelector<HTMLInputElement>(".md-find [name=search]")?.placeholder).toBe("Suchen")
     expect(view.contentDOM.querySelectorAll(".cm-line")[1].textContent).toBe("**b**")
     expect(key("h")).toBe(true)
-    expect(document.activeElement).toBe(view.dom.querySelector(".cm-search [name=replace]"))
+    expect(document.activeElement).toBe(view.dom.querySelector(".md-find [name=replace]"))
+    expect(view.dom.querySelector(".md-find-expand")?.getAttribute("aria-expanded")).toBe("true")
+  })
+
+  it("counts matches, tracks the current one and flags a bad regexp", () => {
+    const view = mount("ab ab ab", { phrases: { "$1 of $2": "$1 von $2", "No results": "Keine" } })
+    runScopeHandlers(view, new KeyboardEvent("keydown", { key: "f", ctrlKey: true }), "editor")
+    const find = view.dom.querySelector<HTMLInputElement>(".md-find [name=search]")!
+    const count = () => view.dom.querySelector(".md-find-count")?.textContent
+    const type = (text: string) => {
+      find.value = text
+      find.dispatchEvent(new Event("input"))
+    }
+    type("ab")
+    expect(count()).toBe("? von 3")
+    find.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    expect(count()).toBe("1 von 3")
+    type("zz")
+    expect(count()).toBe("Keine")
+    // count, previous, next, close
+    expect(view.dom.querySelectorAll<HTMLButtonElement>(".md-find-tools button")[1].disabled).toBe(true)
+    view.dom.querySelectorAll<HTMLButtonElement>(".md-find-toggle")[2].click()
+    type("(")
+    expect(find.getAttribute("aria-invalid")).toBe("true")
   })
 })
 

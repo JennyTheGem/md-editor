@@ -18,7 +18,6 @@ const green = `var(--md-green, ${MD_COLORS.green})`
 const warning = `var(--md-warning, color-mix(in oklch, ${red}, ${green}))`
 const tint = (c: string, pct: number) => `color-mix(in srgb, ${c} ${pct}%, transparent)`
 const lightDark = (sel: string) => `&light ${sel}, &dark ${sel}`
-const panel = ".cm-panel.cm-search"
 // CM's tooltip and autocomplete themes win ties with ours, so these selectors carry one more class or attribute.
 const menu = ".cm-tooltip.cm-tooltip-autocomplete"
 const list = `${menu} > ul[role=listbox]`
@@ -100,7 +99,10 @@ const baseTheme = EditorView.baseTheme({
   },
   ".cm-content .md-ts:hover": { opacity: 1, filter: `brightness(1.5) drop-shadow(0 0 2px ${accent})` },
   "@keyframes md-ts-appear": { from: { opacity: 0, transform: "translateX(-.1em)" }, to: { opacity: .8, transform: "none" } },
-  "@media (prefers-reduced-motion: reduce)": { ".cm-content .md-ts": { animation: "none", transition: "none" } },
+  "@media (prefers-reduced-motion: reduce)": {
+    ".cm-content .md-ts": { animation: "none", transition: "none" },
+    ".md-find-field, .md-find-btn, .md-find-expand .md-icon": { transition: "none" },
+  },
   ".md-icon": {
     display: "inline-block", width: "1em", height: "1em", flexShrink: 0, backgroundColor: "currentColor",
     maskSize: "contain", maskRepeat: "no-repeat", maskPosition: "center",
@@ -145,24 +147,55 @@ const baseTheme = EditorView.baseTheme({
   [`${list} > completion-section`]: { color: muted, fontSize: ".75em", borderBottomColor: border },
   [`${menu} .cm-completionDetail`]: { marginInlineStart: "1em", fontFamily: mono, fontStyle: "normal", opacity: 0.6 },
 
-  // Find panel: CM's own panel theme uses fixed colors and gradient buttons
-  [lightDark(".cm-panels")]: { background: "var(--md-menu-bg, Canvas)", color: "var(--md-text, CanvasText)" },
+  // Find panel sits on the editor surface; CM's own panel theme uses fixed colors
+  [lightDark(".cm-panels")]: { background: "transparent", color: "inherit" },
   [lightDark(".cm-panels-top")]: { borderBottom: `1px solid ${border}` },
-  [lightDark(`${panel} .cm-textfield`)]: {
-    background: surface, color: "inherit", border: `1px solid ${border}`, borderRadius: radius, font: "inherit", fontSize: ".85em",
-    padding: ".25em .5em", outline: "none",
+  ".md-find": {
+    display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", alignItems: "center", gap: ".35em .3em",
+    padding: ".5em .4em", fontSize: ".85em",
   },
-  [lightDark(`${panel} .cm-textfield:focus`)]: { borderColor: accent },
-  [lightDark(`${panel} .cm-button`)]: {
-    backgroundImage: "none", background: surface, color: "inherit", border: `1px solid ${border}`, borderRadius: radius,
-    font: "inherit", fontSize: ".8em", padding: ".25em .8em", cursor: "pointer",
+  ".md-find > [hidden]": { display: "none" },
+  ".md-find-field": {
+    display: "flex", alignItems: "center", gap: "2px", minWidth: 0, padding: "2px 2px 2px .6em",
+    background: surface, border: `1px solid ${border}`, borderRadius: radius, transition: "border-color 150ms",
   },
-  [lightDark(`${panel} .cm-button:hover`)]: { background: tint(accent, 20) },
-  [lightDark(`${panel} label`)]: { color: muted },
-  [lightDark(`${panel} input[type=checkbox]`)]: { accentColor: accent },
-  [lightDark(`${panel} [name=close]`)]: { color: muted, cursor: "pointer", fontSize: "1.2em" },
+  ".md-find-field:focus-within": { borderColor: accent },
+  ".md-find-field[data-invalid]": { borderColor: red },
+  ".md-find-replace": { gridColumn: "2", paddingInlineEnd: ".6em" },
+  ".md-find-input": {
+    flex: "1 1 auto", minWidth: "3em", padding: ".3em 0", border: "none", outline: "none", background: "transparent",
+    color: "inherit", font: "inherit",
+  },
+  ".md-find-input::placeholder": { color: muted, opacity: 1 },
+  ".md-find-tools": { display: "flex", alignItems: "center", gap: "2px" },
+  ".md-find-btn": {
+    display: "inline-flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box", minWidth: "2em", height: "2em",
+    padding: "0 .35em", border: "none", borderRadius: radius, background: "transparent", color: muted, font: "inherit",
+    cursor: "pointer", transition: "background-color 150ms, color 150ms",
+  },
+  ".md-find-btn .md-icon": { width: "1.3em", height: "1.3em" },
+  ".md-find-btn:hover:not(:disabled)": { background: surface, color: text },
+  ".md-find-btn:focus-visible": { outline: `2px solid ${accent}`, outlineOffset: "-2px" },
+  ".md-find-btn:disabled": { opacity: 0.4, cursor: "default" },
+  ".md-find-toggle": { minWidth: "1.75em", height: "1.75em" },
+  ".md-find-toggle .md-icon": { width: "1.15em", height: "1.15em" },
+  ".md-find-toggle[aria-pressed=true]": { background: tint(accent, 35), color: text },
+  ".md-find-toggle[aria-pressed=true]:hover": { background: tint(accent, 45) },
+  ".md-find-expand .md-icon": { transition: "transform 150ms" },
+  ".md-find-expand[aria-expanded=true] .md-icon": { transform: "rotate(90deg)" },
+  ".md-find-action": { padding: "0 .75em", background: surface, color: text, whiteSpace: "nowrap" },
+  ".md-find-action:hover:not(:disabled)": { background: tint(accent, 25) },
+  ".md-find-count": {
+    minWidth: "4.5em", paddingInline: ".3em .4em", textAlign: "end", color: muted, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
+  },
+  ".md-find-count[data-empty]": { color: red },
+  "@media (pointer: coarse)": {
+    // 16px stops iOS zooming into the field
+    ".md-find-input": { fontSize: "16px" },
+    ".md-find-btn": { minWidth: "2.5em", height: "2.5em" },
+  },
   [lightDark(".cm-content .cm-searchMatch")]: { backgroundColor: tint(accent, 25) },
-  [lightDark(".cm-content .cm-searchMatch-selected")]: { backgroundColor: tint(accent, 50) },
+  [lightDark(".cm-content .cm-searchMatch-selected")]: { backgroundColor: tint(accent, 50), outline: `1px solid ${accent}` },
 })
 
 export const mdTheme: Extension = [baseTheme, syntaxHighlighting(codeStyle)]

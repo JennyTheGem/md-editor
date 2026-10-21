@@ -99,7 +99,7 @@ Mount-only options are read when the state is created (mount or `setDoc`):
 | `slash` | `true` | Slash menu. |
 | `emoji` | `true` | Emoji menu. `true` = built-in lazy set, `false` = off, or a loader `() => Promise<EmojiEntry[]>`. |
 | `timestamps` | none | `{ now, seek, trigger? }`. Without it there are no pills, no `#` trigger and no timestamp command. |
-| `icons` | `{}` | Image URLs for `timestamp`, `copy`, `copied` and the callout types `note`, `tip`, `warning`, `danger`, drawn as `currentColor` masks. A missing callout icon shows only the title. |
+| `icons` | `{}` | Image URLs for `timestamp`, `copy`, `copied`, the callout types `note`, `tip`, `warning`, `danger`, and the find panel's `findNext`, `findPrev`, `close`, `expand`, `matchCase`, `wholeWord`, `regexp`, drawn as `currentColor` masks. A missing callout icon shows only the title; a missing panel icon shows the button's phrase as text. |
 | `codeLanguages` | `defaultCodeLanguages` | Fence highlighting: js/jsx, ts/tsx, css, html, json, python. |
 | `revealDelay` | `400` | Ms the raw markdown stays put after a mouse release, so text never shifts under a click. |
 | `onChange` | none | `(doc, state)` on every doc change. Never called by `setDoc`. |
@@ -137,13 +137,15 @@ Keys: Mod-b bold, Mod-i italic, Mod-u underline, Tab indents (4 spaces at a bare
 
 Find and replace (`@codemirror/search`, panel on top): Mod-f find, Mod-h replace (Cmd-Alt-f on macOS, where Cmd-h hides the app), Enter or F3 / Mod-g next, Shift for previous, Escape closes. Mod-d selects the next occurrence, Mod-Shift-l every match. While the panel is open the line of the current match shows its raw markdown.
 
+The panel is the package's own (`.md-find`): a chevron that opens the replace row, the find field with case, whole word and regexp toggles, a match counter (`3 of 12`, `? of 12` when the cursor is not on a match, capped at 999), previous, next and close. Previous, next and both replace buttons are disabled without a match, and an invalid regexp marks the field. It sits on the editor surface, so the host's background shows through.
+
 ## Phrases
 
 Every UI string goes through CodeMirror's `EditorState.phrases`. The keys are the English defaults, listed in `MD_PHRASES`; pass a translation for any of them:
 
 Markdown editor, Completions, Copy code, Copied, Copy failed, Jump to $1, Toggle task, $1+click to open link, Ctrl, Cmd, text, Link text, Column, Insert, Format, Blocks, Timestamp, Heading 1, Heading 2, Heading 3, Bold, Italic, Underline, Strikethrough, Inline code, Superscript, Link, Bullet list, Numbered list, Task list, Quote, Code block, Table, Divider, Today's date, Callout, Note, Tip, Warning, Danger.
 
-Find panel (CodeMirror's own keys): Find, Replace, next, previous, all, match case, regexp, by word, replace, replace all, close, current match, on line, replaced match on line $, replaced $ matches.
+Find panel: Find, Replace, next, previous, match case, regexp, by word, replace, replace all, close, Toggle replace, $1 of $2, No results. With icons, the lowercase ones are tooltips and screen reader labels, so translate them in sentence case. CodeMirror's own screen reader keys: current match, on line, replaced match on line $, replaced $ matches.
 
 `$1` is filled in (a time, or the Ctrl/Cmd label), `$` with a line number or match count.
 
