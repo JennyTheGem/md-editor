@@ -14,4 +14,4 @@ export type {
   MdEditorOptions, MdRuntimeOptions, MarkdownEditorHandle, MarkdownEditorProps,
 } from "./options.ts"
 export type { EditorState, Extension, StateCommand } from "@codemirror/state"
-export type { EditorView } from "@codemirror/view"
+export type { Command, EditorView } from "@codemirror/view"

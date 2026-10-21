@@ -3,6 +3,7 @@ import type { JSX, RefObject } from "react"
 import { EditorView } from "@codemirror/view"
 import { mdCommands } from "./commands/index.ts"
 import { revealLine } from "./flash.ts"
+import { openFind } from "./search.ts"
 import { createMdState, setDoc as setEditorDoc, updateMdEditor } from "./editor.ts"
 import type { MarkdownEditorProps, MdEditorOptions, MdPhrases, MdRuntimeOptions } from "./options.ts"
 
@@ -95,9 +96,10 @@ export function MarkdownEditor(props: MarkdownEditorProps): JSX.Element {
     run(command) {
       const v = viewRef.current
       if (!v) return false
-      const cmd = typeof command === "string" ? mdCommands[command] : command
+      const cmd = command === "find" ? openFind : typeof command === "string" ? mdCommands[command] : command
       const ok = cmd(v)
-      v.focus()
+      // A panel command (find) keeps the focus it moved into its field
+      if (!v.dom.querySelector(".cm-panels")?.contains(document.activeElement)) v.focus()
       return ok
     },
   }), [])

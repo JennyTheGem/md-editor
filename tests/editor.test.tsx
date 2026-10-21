@@ -145,6 +145,7 @@ describe("headless", () => {
     view.dispatch({ selection: { anchor: 4 } })
     expect(view.contentDOM.querySelectorAll(".cm-line")[1].textContent).toBe("b")
     expect(key("f")).toBe(true)
+    expect(document.activeElement).toBe(view.dom.querySelector(".md-find [name=search]"))
     expect(view.dom.querySelector<HTMLInputElement>(".md-find [name=search]")?.placeholder).toBe("Suchen")
     expect(view.contentDOM.querySelectorAll(".cm-line")[1].textContent).toBe("**b**")
     expect(key("h")).toBe(true)
@@ -226,6 +227,8 @@ describe("MarkdownEditor", () => {
     expect(h.run("red")).toBe(true)
     expect(h.getDoc()).toBe('<span style="color:#e06c75">**y**</span>')
     expect(h.run("timestamp")).toBe(false)
+    expect(h.run("find")).toBe(true)
+    expect(document.activeElement).toBe(h.view.dom.querySelector(".md-find [name=search]"))
   })
 
   it("reveal flashes the line without moving the cursor, then clears", () => {

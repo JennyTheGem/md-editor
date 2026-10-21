@@ -127,7 +127,7 @@ Slash commands: `{ id, label, apply, aliases?, section?, block? }`. `apply` is a
 | `setDoc(doc)` | Loads a doc with a fresh undo history. |
 | `focus()` | Focuses the editor. |
 | `reveal(pos)` | Scrolls `pos`'s line to the top and flashes it (`md-flash`), without moving the cursor or focus. |
-| `run(command)` | Runs an `MdCommandName` or any `StateCommand`, then refocuses. Returns whether it applied. |
+| `run(command)` | Runs an `MdCommandName`, `"find"` (opens the find panel), or any `StateCommand` / `Command`, then refocuses the text unless the command put focus in a panel. Returns whether it applied. |
 
 `MdCommandName`: `timestamp`, `h1`, `h2`, `h3`, `bold`, `italic`, `underline`, `strike`, `inlineCode`, `sup`, `red`, `blue`, `green`, `defaultColor`, `code`, `codeBlock`, `hr`, `link`, `bulletList`, `orderedList`, `taskList`, `quote`, `callout`, `table`, `date`.
 

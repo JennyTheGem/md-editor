@@ -1,6 +1,6 @@
 import { Facet } from "@codemirror/state"
 import type { EditorState, StateCommand } from "@codemirror/state"
-import type { EditorView } from "@codemirror/view"
+import type { Command, EditorView } from "@codemirror/view"
 import type { LanguageDescription } from "@codemirror/language"
 import type { Ref } from "react"
 import type { MdPhrase } from "./phrases.ts"
@@ -68,7 +68,8 @@ export interface MarkdownEditorHandle {
   focus(): void
   // Scroll to pos's line and flash it, without moving the cursor
   reveal(pos: number): void
-  run(command: MdCommandName | StateCommand): boolean
+  // "find" opens the find panel and leaves focus in its field
+  run(command: MdCommandName | "find" | StateCommand | Command): boolean
 }
 
 export interface MarkdownEditorProps extends MdEditorOptions {

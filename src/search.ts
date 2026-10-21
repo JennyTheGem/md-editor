@@ -112,6 +112,12 @@ class FindPanel implements Panel {
     panels.set(view, this)
   }
 
+  // CM only focuses [main-field] when the panel is already open
+  mount(): void {
+    this.find.focus()
+    this.find.select()
+  }
+
   private phrase(p: MdPhrase, ...insert: unknown[]): string {
     return this.view.state.phrase(p, ...insert)
   }
@@ -188,6 +194,8 @@ class FindPanel implements Panel {
     panels.delete(this.view)
   }
 }
+
+export const openFind: Command = openSearchPanel
 
 export const openReplacePanel: Command = (view) => {
   openSearchPanel(view)
