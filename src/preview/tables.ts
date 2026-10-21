@@ -27,7 +27,8 @@ export function rowCellSpans(row: SyntaxNode): Span[] {
   const spans: Span[] = []
   if (first.from !== row.from) spans.push({ from: row.from, to: first.from })
   for (let i = 1; i < delims.length; i++) spans.push({ from: delims[i - 1].to, to: delims[i].from })
-  if (last.to !== row.to) spans.push({ from: last.to, to: row.to })
+  // Spaces after the closing pipe are no cell
+  if (row.lastChild?.name === "TableCell") spans.push({ from: last.to, to: row.to })
   return spans
 }
 
@@ -58,9 +59,11 @@ const rowTexts = (row: SyntaxNode, src: string): string[] =>
     return src.slice(t.from, t.to)
   })
 
-// An edited cell shows "|", the doc keeps it escaped
+// An edited cell shows "|", the doc keeps it escaped. A trailing backslash gets a space so it never escapes the next pipe.
 const unescapePipes = (s: string) => s.replace(/\\\|/g, "|")
-export const cellSource = (text: string): string => text.replace(/[\r\n]+/g, " ").replace(/\\?\|/g, "\\|")
+const trimCell = (s: string) => s.replace(/^[ \t]+|[ \t]+$/g, "")
+export const cellSource = (text: string): string =>
+  trimCell(text.replace(/[\r\n]+/g, " ")).replace(/\\?\|/g, "\\|").replace(/\\$/, "\\ ")
 
 function ctxOf(state: EditorState): InlineCtx {
   const config = state.facet(mdConfig)
@@ -149,17 +152,18 @@ class TableWidget extends WidgetType {
     if (!td || !refreshCells(dom, this.source, this.ctx, td)) return false
     const row = tableRows(topTables(mdParser.parse(this.source)).next().value!)[Number(td.dataset.row)]
     const text = unescapePipes(row ? rowTexts(row, this.source)[Number(td.dataset.col)] ?? "" : "")
-    // Undo or a pasted line break changed the cell under the caret
-    if (text !== td.textContent) {
+    // Undo or a pasted line break changed the cell under the caret. Spaces at its ends are not saved, so they stay.
+    if (text !== trimCell(td.textContent ?? "")) {
       td.textContent = text
       caretToEnd(td)
     }
     return true
   }
 
-  // A press outside the cells is on the wrapper's scrollbar: leave it to the browser
+  // A press outside the cells is on the wrapper's scrollbar, one in the edited cell places its caret: both stay with the browser
   ignoreEvent(e: Event): boolean {
-    return e.type !== "mousedown" || !(e.target instanceof Element && e.target.closest("td, th"))
+    const target = e.target instanceof Element ? e.target : null
+    return e.type !== "mousedown" || !target?.closest("td, th") || !!target.closest("[data-editing]")
   }
 }
 
@@ -204,12 +208,16 @@ export function setCell(state: EditorState, table: SyntaxNode, r: number, c: num
   if (!row) return null
   const spans = rowCellSpans(row)
   const span = spans[c]
+  const last = row.lastChild
+  const closed = last?.name === "TableDelimiter"
   if (span) {
     const t = trimSpan(state.sliceDoc(span.from, span.to), span.from, span)
-    return t.to > t.from ? { from: t.from, to: t.to, insert: text } : { from: span.from, to: span.to, insert: ` ${text} ` }
+    if (t.to === t.from) return { from: span.from, to: span.to, insert: ` ${text} ` }
+    // An edge cell without its outer pipe gets one, or emptying it would drop the column
+    const open = c === 0 && row.firstChild?.name !== "TableDelimiter" ? "| " : ""
+    return { from: t.from, to: t.to, insert: `${open}${text}${c === spans.length - 1 && !closed ? " |" : ""}` }
   }
-  const closed = state.sliceDoc(row.to - 1, row.to) === "|"
-  return { from: row.to, insert: `${closed ? "" : " |"}${"  |".repeat(c - spans.length)} ${text} |` }
+  return { from: closed ? last.to : row.to, insert: `${closed ? "" : " |"}${"  |".repeat(c - spans.length)} ${text} |` }
 }
 
 export type TableOp = "rowAbove" | "rowBelow" | "colLeft" | "colRight" | "delRow" | "delCol"
@@ -272,9 +280,9 @@ function located(td: HTMLElement): { view: EditorView; table: SyntaxNode; wrap: 
   return view && wrap && table ? { view, table, wrap } : null
 }
 
-function startEdit(td: HTMLElement): void {
+function startEdit(td: HTMLElement): boolean {
   const at = located(td)
-  if (!at || at.view.state.readOnly) return
+  if (!at || at.view.state.readOnly) return false
   const { view, table } = at
   const { r, c } = cellPos(td)
   const row = tableRows(table)[r]
@@ -284,6 +292,7 @@ function startEdit(td: HTMLElement): void {
   if (!td.isContentEditable) td.setAttribute("contenteditable", "true")
   td.focus()
   caretToEnd(td)
+  return true
 }
 
 function finishEdit(td: HTMLElement): void {
@@ -291,24 +300,30 @@ function finishEdit(td: HTMLElement): void {
   delete td.dataset.editing
   td.removeAttribute("contenteditable")
   const at = located(td)
-  if (at) refreshCells(at.wrap, at.view.state.sliceDoc(at.table.from, at.table.to), ctxOf(at.view.state))
+  // A click on another cell already started editing it
+  const next = at?.wrap.querySelector<HTMLElement>("[data-editing]") ?? undefined
+  if (at) refreshCells(at.wrap, at.view.state.sliceDoc(at.table.from, at.table.to), ctxOf(at.view.state), next)
 }
 
 function editCell(view: EditorView, table: SyntaxNode, r: number, c: number): boolean {
   const wrap = [...view.contentDOM.querySelectorAll<HTMLElement>(".md-table-wrap")]
     .find((w) => tableAt(view.state, view.posAtDOM(w))?.from === table.from)
   const td = wrap?.querySelector<HTMLElement>(`[data-row="${r}"][data-col="${c}"]`)
-  if (td) startEdit(td)
-  return !!td
+  return !!td && startEdit(td)
+}
+
+// After the table was rewritten: edit the cell nearest (r, c), else hand focus back to the editor
+function reenter(view: EditorView, pos: number, r: number, c: number): void {
+  const table = tableAt(view.state, pos)
+  const rows = table ? tableRows(table) : []
+  if (!table || !editCell(view, table, Math.min(r, rows.length - 1), Math.min(c, rowCellSpans(rows[0]).length - 1))) view.focus()
 }
 
 function runOp(view: EditorView, table: SyntaxNode, op: TableOp, r: number, c: number): void {
   const insert = applyTableOp(view.state.sliceDoc(table.from, table.to), op, r, c)
   if (insert === null) return
   view.dispatch({ changes: { from: table.from, to: table.to, insert }, userEvent: "input.table" })
-  const next = tableAt(view.state, table.from)
-  const target = op === "rowBelow" ? [r + 1, c] : op === "colRight" ? [r, c + 1] : op === "rowAbove" || op === "colLeft" ? [r, c] : null
-  if (!next || !target || !editCell(view, next, target[0], target[1])) view.focus()
+  reenter(view, table.from, op === "rowBelow" ? r + 1 : r, op === "colRight" ? c + 1 : c)
 }
 
 function leave(view: EditorView, table: SyntaxNode, dir: 1 | -1): void {
@@ -332,7 +347,8 @@ function onCellInput(e: Event): void {
 
 function onCellBlur(e: Event): void {
   const td = editedCell(e)
-  if (td) finishEdit(td)
+  // Still active: only the window lost focus
+  if (td && td.ownerDocument.activeElement !== td) finishEdit(td)
 }
 
 function onCellKey(e: KeyboardEvent): void {
@@ -360,8 +376,11 @@ function onCellKey(e: KeyboardEvent): void {
   else if (e.key === "Escape" || ((e.key === "ArrowDown" || e.key === "ArrowUp") && !mod)) {
     finishEdit(td)
     leave(view, table, e.key === "ArrowUp" ? -1 : 1)
-  } else if (mod && /^[zy]$/i.test(e.key)) (e.key.toLowerCase() === "y" || e.shiftKey ? redo : undo)(view)
-  else return
+  } else if (mod && /^[zy]$/i.test(e.key)) {
+    (e.key.toLowerCase() === "y" || e.shiftKey ? redo : undo)(view)
+    // The table changed shape and was redrawn
+    if (!td.isConnected) reenter(view, table.from, r, c)
+  } else return
   e.preventDefault()
 }
 
@@ -486,8 +505,6 @@ const tableClicks = EditorView.domEventHandlers({
     const target = e.target as Element
     const td = target.closest?.<HTMLElement>(".md-table-wrap td, .md-table-wrap th")
     if (!td || target.closest(".md-ts")) return false
-    // Already editing: the browser places the caret
-    if (isEditing(td)) return true
     e.preventDefault()
     startEdit(td)
     return true

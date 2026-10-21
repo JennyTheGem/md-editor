@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import type { EditorState } from "@codemirror/state"
+import { history } from "@codemirror/commands"
+import { EditorState } from "@codemirror/state"
 import { keymap, runScopeHandlers } from "@codemirror/view"
 import type { EditorView, WidgetType } from "@codemirror/view"
 import { mdParser } from "../src/syntax.ts"
@@ -31,6 +32,7 @@ describe("rowCellSpans", () => {
     expect(cellTexts("a | b")).toEqual(["a ", " b"])
     expect(cellTexts("| a |  |")).toEqual([" a ", "  "])
     expect(cellTexts("| a \\| b | c |")).toEqual([" a \\| b ", " c "])
+    expect(cellTexts("| a | b |  ")).toEqual([" a ", " b "])
   })
 })
 
@@ -117,8 +119,8 @@ describe("tables in a view", () => {
 
   const cell = (view: EditorView, r: number, c: number) =>
     view.contentDOM.querySelector<HTMLElement>(`.md-table-wrap [data-row="${r}"][data-col="${c}"]`)
-  const key = (el: Element, k: string, shiftKey = false) => {
-    const e = new KeyboardEvent("keydown", { key: k, shiftKey, bubbles: true, cancelable: true })
+  const key = (el: Element, k: string, shiftKey = false, ctrlKey = false) => {
+    const e = new KeyboardEvent("keydown", { key: k, shiftKey, ctrlKey, bubbles: true, cancelable: true })
     el.dispatchEvent(e)
     return e.defaultPrevented
   }
@@ -126,6 +128,111 @@ describe("tables in a view", () => {
     td.textContent = text
     td.dispatchEvent(new Event("input", { bubbles: true }))
   }
+  const click = (td: HTMLElement) => {
+    const e = new MouseEvent("mousedown", { bubbles: true, cancelable: true, button: 0 })
+    td.dispatchEvent(e)
+    return e.defaultPrevented
+  }
+  // Edits cell (r, c) of src to text and returns the doc
+  const edit = (src: string, r: number, c: number, text: string) => {
+    const view = mdView(src, ext)
+    try {
+      const td = cell(view, r, c)!
+      click(td)
+      type(td, text)
+      return view.state.doc.toString()
+    } finally {
+      view.destroy()
+    }
+  }
+
+  it("keeps spaces typed at the ends of a cell", () => {
+    const view = mdView(doc, ext, doc.length)
+    try {
+      const td = cell(view, 1, 1)!
+      click(td)
+      type(td, "x ")
+      expect(td.textContent).toBe("x ")
+      type(td, "x y")
+      expect(view.state.doc.line(4).text).toBe("| c |   x y |")
+      type(td, "a\nb")
+      expect(view.state.doc.line(4).text).toBe("| c |   a b |")
+      expect(td.textContent).toBe("a b")
+    } finally {
+      view.destroy()
+    }
+  })
+
+  it("edits the raw source of a cell clicked while another is edited", () => {
+    const view = mdView("| **a** | [l](https://x.y) |\n| - | - |", ext)
+    try {
+      click(cell(view, 0, 0)!)
+      const td = cell(view, 0, 1)!
+      expect(click(td)).toBe(true)
+      expect(td.textContent).toBe("[l](https://x.y)")
+      expect(cell(view, 0, 0)?.querySelector("strong")).not.toBeNull()
+      // A press in the edited cell is the browser's, to place the caret
+      expect(click(td)).toBe(false)
+      expect(td.dataset.editing).toBe("")
+    } finally {
+      view.destroy()
+    }
+  })
+
+  it("keeps rows and columns whole when editing edge cells", () => {
+    // No outer pipes: the edited edge cell gets one
+    expect(edit("a | b\n--- | ---\nc | d", 1, 0, "")).toBe("a | b\n--- | ---\n|  | d")
+    expect(edit("a | b\n--- | ---\nc | d", 0, 1, "")).toBe("a |  |\n--- | ---\nc | d")
+    expect(edit("a | b\n--- | ---\nc | d", 1, 0, "- x")).toBe("a | b\n--- | ---\n| - x | d")
+    // A trailing backslash would escape the pipe after it
+    expect(edit("|a|b|\n|-|-|", 0, 0, "a\\")).toBe("|a\\ |b|\n|-|-|")
+    // A missing cell goes after the closing pipe, not after trailing spaces
+    expect(edit("| a | b |\n| - | - |\n| c |  ", 1, 1, "e")).toBe("| a | b |\n| - | - |\n| c | e |  ")
+  })
+
+  it("re-enters a cell after an undo or a delete redraws the table", () => {
+    const view = mdView("| a |\n| - |\n| b |\n| c |", [...ext, history()])
+    try {
+      const last = cell(view, 2, 0)!
+      click(last)
+      key(last, "Tab")
+      type(cell(view, 3, 0)!, "d")
+      expect(view.state.doc.lines).toBe(5)
+      expect(key(cell(view, 3, 0)!, "z", false, true)).toBe(true)
+      expect(view.state.doc.lines).toBe(4)
+      expect(document.activeElement).toBe(cell(view, 2, 0))
+      cell(view, 2, 0)!.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }))
+      const del = [...view.dom.querySelectorAll<HTMLButtonElement>(".md-table-menu button")].find((b) => b.textContent === "Delete row")
+      del!.click()
+      expect(view.state.doc.toString()).toBe("| a |\n| - |\n| b |")
+      expect(document.activeElement).toBe(cell(view, 1, 0))
+    } finally {
+      view.destroy()
+    }
+  })
+
+  it("keeps editing when only the window loses focus", () => {
+    const view = mdView(doc, ext)
+    try {
+      const td = cell(view, 1, 0)!
+      click(td)
+      td.dispatchEvent(new FocusEvent("focusout", { bubbles: true }))
+      expect(td.dataset.editing).toBe("")
+    } finally {
+      view.destroy()
+    }
+  })
+
+  it("arrow keys pass a table in a read-only editor", () => {
+    const view = mdView(doc, [...ext, EditorState.readOnly.of(true)], 1)
+    try {
+      expect(press(view, "ArrowDown")).toBe(false)
+      expect(click(cell(view, 1, 0)!)).toBe(true)
+      expect(cell(view, 1, 0)?.dataset.editing).toBeUndefined()
+    } finally {
+      view.destroy()
+    }
+  })
 
   it("arrow keys into a rendered table edit its first cell", () => {
     const view = mdView(doc, ext, 1)
