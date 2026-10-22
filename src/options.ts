@@ -56,10 +56,11 @@ export interface MdEditorOptions {
   icons?: MdIcons
   codeLanguages?: readonly LanguageDescription[]
   revealDelay?: number
+  vim?: boolean
   onChange?: (doc: string, state: EditorState) => void
 }
 
-export type MdRuntimeOptions = Pick<MdEditorOptions, "livePreview" | "placeholder" | "phrases" | "slashCommands">
+export type MdRuntimeOptions = Pick<MdEditorOptions, "livePreview" | "placeholder" | "phrases" | "slashCommands" | "vim">
 
 export interface MarkdownEditorHandle {
   readonly view: EditorView | null

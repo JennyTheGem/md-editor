@@ -19,6 +19,7 @@ import { findReplace } from "./search.ts"
 import { createMarkdown, defaultCodeLanguages } from "./syntax.ts"
 import { mdTheme } from "./theme.ts"
 import { timestamps } from "./timestamps/timestamps.ts"
+import { vimC, vimExt } from "./vim.ts"
 
 const previewC = new Compartment()
 const phrasesC = new Compartment()
@@ -34,6 +35,8 @@ export function mdEditor(o: MdEditorOptions = {}): Extension {
   const md = createMarkdown(o.codeLanguages ?? defaultCodeLanguages)
   const onChange = o.onChange
   return [
+    // First, so vim sees keys before every keymap
+    vimC.of(vimExt(o.vim)),
     mdConfig.of({ timestamps: o.timestamps ?? null, icons: o.icons ?? {}, revealDelay: o.revealDelay ?? 400 }),
     phrasesC.of(EditorState.phrases.of(o.phrases ?? {})),
     placeholderC.of(placeholderExt(o.placeholder)),
@@ -77,5 +80,6 @@ export function updateMdEditor(view: EditorView, o: MdRuntimeOptions): void {
   if (Object.hasOwn(o, "placeholder")) effects.push(placeholderC.reconfigure(placeholderExt(o.placeholder)))
   if (Object.hasOwn(o, "phrases")) effects.push(phrasesC.reconfigure(EditorState.phrases.of(o.phrases ?? {})))
   if (Object.hasOwn(o, "slashCommands")) effects.push(slashC.reconfigure(slashCommandsFacet.of(o.slashCommands ?? [])))
+  if (Object.hasOwn(o, "vim")) effects.push(vimC.reconfigure(vimExt(o.vim)))
   if (effects.length) view.dispatch({ effects })
 }

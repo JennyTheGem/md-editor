@@ -91,6 +91,7 @@ Runtime options apply without a remount and keep undo, cursor and scroll (`updat
 | `placeholder` | none | Text shown in an empty editor. |
 | `phrases` | English | UI strings, see Phrases. |
 | `slashCommands` | `[]` | Host commands added after the built-ins. |
+| `vim` | `false` | Vim keys (`@replit/codemirror-vim`) with a mode line at the bottom. Loaded on first use, so it costs nothing while off. Vim sees keys first: in normal mode Ctrl-b, Ctrl-f and friends are vim's, in insert mode the package keys still work except Ctrl-u (vim deletes to the line start). |
 
 Mount-only options are read when the state is created (mount or `setDoc`):
 

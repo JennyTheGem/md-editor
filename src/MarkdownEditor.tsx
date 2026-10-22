@@ -20,6 +20,7 @@ function optionsFrom(latest: RefObject<MarkdownEditorProps>): MdEditorOptions {
     icons: p.icons,
     codeLanguages: p.codeLanguages,
     revealDelay: p.revealDelay,
+    vim: p.vim,
     timestamps: p.timestamps
       ? {
           trigger: p.timestamps.trigger,
@@ -32,7 +33,7 @@ function optionsFrom(latest: RefObject<MarkdownEditorProps>): MdEditorOptions {
 }
 
 function runtimeOf(p: MdRuntimeOptions): MdRuntimeOptions {
-  return { livePreview: p.livePreview, placeholder: p.placeholder, phrases: p.phrases, slashCommands: p.slashCommands }
+  return { livePreview: p.livePreview, placeholder: p.placeholder, phrases: p.phrases, slashCommands: p.slashCommands, vim: p.vim }
 }
 
 function samePhrases(a: MdPhrases | undefined, b: MdPhrases | undefined): boolean {
@@ -43,7 +44,7 @@ function samePhrases(a: MdPhrases | undefined, b: MdPhrases | undefined): boolea
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps): JSX.Element {
-  const { ref, className, livePreview, placeholder, phrases, slashCommands } = props
+  const { ref, className, livePreview, placeholder, phrases, slashCommands, vim } = props
   const host = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const latest = useRef(props)
@@ -74,9 +75,10 @@ export function MarkdownEditor(props: MarkdownEditorProps): JSX.Element {
     if (placeholder !== prev.placeholder) changed.placeholder = placeholder
     if (!samePhrases(phrases, prev.phrases)) changed.phrases = phrases
     if (slashCommands !== prev.slashCommands) changed.slashCommands = slashCommands
-    applied.current = { livePreview, placeholder, phrases, slashCommands }
+    if (vim !== prev.vim) changed.vim = vim
+    applied.current = { livePreview, placeholder, phrases, slashCommands, vim }
     if (Object.keys(changed).length) updateMdEditor(view, changed)
-  }, [livePreview, placeholder, phrases, slashCommands])
+  }, [livePreview, placeholder, phrases, slashCommands, vim])
 
   useImperativeHandle(ref, () => ({
     get view() {

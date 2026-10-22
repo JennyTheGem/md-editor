@@ -176,6 +176,43 @@ describe("headless", () => {
   })
 })
 
+describe("vim", () => {
+  const press = (v: EditorView, key: string, ctrlKey = false) =>
+    v.contentDOM.dispatchEvent(new KeyboardEvent("keydown", { key, ctrlKey, bubbles: true, cancelable: true }))
+  const panel = (v: EditorView) => v.dom.querySelector(".cm-vim-panel")
+
+  // First, while the package is not cached yet
+  it("drops a load that lands after vim was turned off or the view was destroyed", async () => {
+    const off = mount("abc", { vim: true })
+    updateMdEditor(off, { vim: false })
+    new EditorView({ state: createMdState("abc", { vim: true }) }).destroy()
+    const on = mount("abc", { vim: true })
+    await vi.waitFor(() => expect(panel(on)).not.toBeNull())
+    expect(panel(off)).toBeNull()
+  })
+
+  it("loads lazily, runs normal mode keys first, survives setDoc and turns off at runtime", async () => {
+    const view = mount("abc", { vim: true })
+    await vi.waitFor(() => expect(panel(view)?.textContent).toContain("NORMAL"))
+    press(view, "x")
+    expect(view.state.doc.toString()).toBe("bc")
+    press(view, "i")
+    press(view, "b", true)
+    expect(panel(view)?.textContent).toContain("INSERT")
+    expect(view.state.doc.toString()).toBe("**text**bc")
+    setDoc(view, "new", { vim: true })
+    expect(panel(view)).not.toBeNull()
+    updateMdEditor(view, { vim: false })
+    expect(panel(view)).toBeNull()
+    press(view, "x")
+    expect(view.state.doc.toString()).toBe("new")
+  })
+
+  it("stays off without the option", () => {
+    expect(panel(mount("x"))).toBeNull()
+  })
+})
+
 describe("timestamps are opt-in", () => {
   it("renders no pill without the option", () => {
     const view = mount("@[1:23]")
