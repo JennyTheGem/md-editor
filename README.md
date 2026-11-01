@@ -81,6 +81,21 @@ setDoc(view, "# Next note")
 
 `mdEditor(options)` returns the extension set if you build the state yourself.
 
+## Static render
+
+For print or export: the doc as plain elements, parsed like the editor. Raw HTML stays text, links are real anchors (http, https and mailto only).
+
+```ts
+import { renderMarkdown } from "@uplift-beyond/md-editor"
+
+const root = renderMarkdown(doc, {
+  timestampHref: (seconds) => `https://example.com/video?t=${seconds}`, // null = plain text
+  phrases: { Note: "Notiz" }, // callout titles
+})
+```
+
+The root is `div.md-doc`. Style it yourself: `md-ts` (timestamps), `md-link`, `md-color-<name>`, `md-callout md-callout-<type>`, `md-task` / `md-task-done` / `md-task-box`, `md-code-block`, `md-table`.
+
 ## Options
 
 Runtime options apply without a remount and keep undo, cursor and scroll (`updateMdEditor`, or new props on `MarkdownEditor`):

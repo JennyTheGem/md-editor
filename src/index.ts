@@ -4,6 +4,8 @@ export { mdCommands, toggleHeading, setColor, insertTimestamp } from "./commands
 export { formatTime, formatTimestamp, parseTimestamp } from "./timestamps/format.ts"
 export { revealLine } from "./flash.ts"
 export { extractTimestamps } from "./timestamps/timestamps.ts"
+export { renderMarkdown } from "./render.ts"
+export type { RenderOptions } from "./render.ts"
 export type { MdTimestamp } from "./timestamps/timestamps.ts"
 export { defaultCodeLanguages } from "./syntax.ts"
 export { MD_PHRASES } from "./phrases.ts"

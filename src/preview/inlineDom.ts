@@ -1,9 +1,11 @@
 import type { SyntaxNode } from "@lezer/common"
 import { colorOfOpenTag } from "../colors.ts"
+import { parseTimestamp } from "../timestamps/format.ts"
 import { createPillDom } from "../timestamps/pillDom.ts"
 
-// pills: false renders timestamps as plain text (timestamps are opt-in)
-export type InlineCtx = { jump: string; icon?: string; pills?: boolean }
+// pills: false renders timestamps as plain text (timestamps are opt-in).
+// links and timestampHref are for static export: real anchors instead of editor spans.
+export type InlineCtx = { jump: string; icon?: string; pills?: boolean; links?: boolean; timestampHref?: (seconds: number) => string | null }
 
 const WRAPS: Readonly<Record<string, readonly [tag: string, cls: string]>> = {
   StrongEmphasis: ["strong", "md-strong"],
@@ -13,11 +15,24 @@ const WRAPS: Readonly<Record<string, readonly [tag: string, cls: string]>> = {
   Superscript: ["sup", "md-sup"],
 }
 
-const HIDDEN = new Set(["EmphasisMark", "StrikethroughMark", "UnderlineMark", "SuperscriptMark", "ColorMark", "CodeMark", "LinkMark", "LinkTitle"])
+const HIDDEN = new Set(["EmphasisMark", "StrikethroughMark", "UnderlineMark", "SuperscriptMark", "ColorMark", "CodeMark", "LinkMark", "LinkTitle", "HeaderMark", "QuoteMark"])
 
 function el(tag: string, cls?: string): HTMLElement {
   const e = document.createElement(tag)
   if (cls) e.className = cls
+  return e
+}
+
+// http(s) and mailto only, a bare "www." gets https
+function safeHref(url: string): string | null {
+  const u = /^www\./i.test(url) ? `https://${url}` : url
+  return /^(https?:|mailto:)/i.test(u) ? u : null
+}
+
+function linkEl(url: string, ctx: InlineCtx): HTMLElement {
+  const href = ctx.links ? safeHref(url) : null
+  const e = el(href ? "a" : "span", "md-link")
+  if (href) e.setAttribute("href", href)
   return e
 }
 
@@ -62,21 +77,30 @@ function renderNode(parent: HTMLElement, src: string, n: SyntaxNode, ctx: Inline
     case "Link": {
       const marks = n.getChildren("LinkMark")
       // Bare brackets like '[^1]' or '[1:99]' stay literal
-      if (marks.length < 2 || !n.getChild("URL")) break
-      const e = el("span", "md-link")
+      const url = n.getChild("URL")
+      if (marks.length < 2 || !url) break
+      const e = linkEl(src.slice(url.from, url.to), ctx)
       appendInline(e, src, n, marks[0].to, marks[1].from, ctx)
       parent.append(e)
       return
     }
     case "URL": {
-      const e = el("span", "md-link")
+      const e = linkEl(src.slice(n.from, n.to), ctx)
       e.textContent = src.slice(n.from, n.to)
       parent.append(e)
       return
     }
     case "Timestamp": {
-      if (ctx.pills === false) break
       const time = src.slice(n.from + 2, n.to - 1)
+      if (ctx.timestampHref) {
+        const href = ctx.timestampHref(parseTimestamp(time) ?? 0)
+        const e = el(href ? "a" : "span", "md-ts")
+        if (href) e.setAttribute("href", href)
+        e.textContent = time
+        parent.append(e)
+        return
+      }
+      if (ctx.pills === false) break
       parent.append(createPillDom(time, ctx.jump.replace("$1", time), ctx.icon))
       return
     }
