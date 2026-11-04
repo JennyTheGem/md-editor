@@ -200,3 +200,7 @@ npm test           # vitest + jsdom
 npm run lint
 npm run typecheck
 ```
+
+## License
+
+MIT, see `LICENSE`. Emoji names come from [gemoji](https://github.com/github/gemoji) (MIT).
